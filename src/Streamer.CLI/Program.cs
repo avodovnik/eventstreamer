@@ -73,7 +73,6 @@ namespace Streamer.CLI
             foreach (var partition in info.PartitionIds)
             {
                 var lRow = row;
-                //var pInfo = client.GetPartitionRuntimeInformationAsync(partition).Result;
                 listeners.Add(partition, CreatePartitionListener(client, partition, x,
                     (active) =>
                     {
@@ -87,8 +86,12 @@ namespace Streamer.CLI
                         }
                     },
 
-                    () =>
+                    (li) =>
                     {
+                        // TODO: write this
+                        ct.SetValue(1, lRow, li.RecieveCount.ToString());
+                        ct.SetValue(2, lRow, li.Offset.ToString());
+                        ct.SetValue(3, lRow, li.EnqueuedTimeUtc.ToString());
                     }));
 
                 row++;
@@ -103,7 +106,7 @@ namespace Streamer.CLI
             Console.Clear();
         }
 
-        private static ListenerInfo CreatePartitionListener(EventHubClient client, string partitionId, ListenOptions x, Action<bool> onListenerActivity, Action onEventsRecieved)
+        private static ListenerInfo CreatePartitionListener(EventHubClient client, string partitionId, ListenOptions x, Action<bool> onListenerActivity, Action<ListenerInfo> onEventsRecieved)
         {
             var li = new ListenerInfo()
             {
@@ -128,6 +131,8 @@ namespace Streamer.CLI
                         var lastEvent = events.Last();
                         li.Offset = lastEvent.SystemProperties.Offset;
                         li.EnqueuedTimeUtc = lastEvent.SystemProperties.EnqueuedTimeUtc;
+
+                        onEventsRecieved?.Invoke(li);
                     }
                 }
 
