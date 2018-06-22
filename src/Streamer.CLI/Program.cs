@@ -66,7 +66,7 @@ namespace Streamer.CLI
 
             Console.WriteLine("Listeners starting... Press <enter> to stop listening.");
 
-            var ct = new ConsoleTable(new string[] { "partitionId", "rcv Count", "offset", "enqueueUtc" }, info.PartitionCount, 15);
+            var ct = new ConsoleTable(new string[] { "partitionId", "rcv Count", "offset", "enqueueUtc" }, info.PartitionCount, 20);
             ct.Render();
 
             int row = 0;
@@ -91,7 +91,7 @@ namespace Streamer.CLI
                         // TODO: write this
                         ct.SetValue(1, lRow, li.RecieveCount.ToString());
                         ct.SetValue(2, lRow, li.Offset.ToString());
-                        ct.SetValue(3, lRow, li.EnqueuedTimeUtc.ToString());
+                        ct.SetValue(3, lRow, li.EnqueuedTimeUtc.ToLongTimeString());
                     }));
 
                 row++;
@@ -122,7 +122,7 @@ namespace Streamer.CLI
 
                 while (!li.KillEvent.WaitOne(1))
                 {
-                    var events = reciever.ReceiveAsync(100, TimeSpan.FromMilliseconds(x.TimeoutReciever)).Result;
+                    var events = reciever.ReceiveAsync(1000, TimeSpan.FromMilliseconds(x.TimeoutReciever)).Result;
                     if (events?.Count() > 0)
                     {
                         //Console.WriteLine($"{partitionId} partition, read {events.Count()} events");
