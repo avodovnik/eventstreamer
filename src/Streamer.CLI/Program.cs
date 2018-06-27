@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using Microsoft.Azure.EventHubs;
 using Newtonsoft.Json;
+using Streamer.CLI.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,35 +13,6 @@ using System.Threading;
 /// </summary>
 namespace Streamer.CLI
 {
-    [Verb("stream", HelpText = "Streams test data to an event hub", Hidden = false)]
-    class StreamOptions
-    {
-        [Option('n', "num", HelpText = "Defines howm many events you want to send to EH.", Required = true)]
-        public double NumberOfEvents { get; set; }
-
-        [Option('i', "interval", HelpText = "Defines the interval for the event timestamp property between individual events.", Required = true)]
-        public double Interval { get; set; }
-
-        [Option('p', "pause", Required = false, HelpText = "Defines the time between each message the sender should wait. This can be used to simulate latency.")]
-        public int Pause { get; set; }
-
-        [Option('e', "eh", Required = true, HelpText = "Connection String")]
-        public string EventHubConnectionString { get; set; }
-    }
-
-    [Verb("listen", HelpText = "Listen to data on the event hub", Hidden = false)]
-    class ListenOptions
-    {
-        [Option('e', "eh", Required = true, HelpText = "EventHub Connection string")]
-        public string EventHubConnectionString { get; set; }
-
-        [Option('c', "group", Required = true, HelpText = "ConsumerGroup of the Event Hub")]
-        public string ConsumerGroup { get; set; }
-
-        [Option('t', "timeout", Required = false, HelpText = "The timeout for the receiver async operation to wait.")]
-        public int TimeoutReciever { get; set; } = 500;
-    }
-
     class Program
     {
         private const int PADDING_WIDTH = 7;
