@@ -10,7 +10,8 @@ using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
-using Streamer.Common.Extensions;
+
+using Streamer.Ingestor.Extensions;
 
 namespace Streamer.Ingestor
 {
@@ -154,22 +155,6 @@ namespace Streamer.Ingestor
                 // TODO: this is where we parse the events
                 // send it to the "other" service
                 // and "checkpoint" the offset
-            }
-
-
-            // TODO: Replace the following sample code with your own logic 
-            //       or remove this RunAsync override if it's not needed in your service.
-
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                using (var tx = this.StateManager.CreateTransaction())
-                {
-                  
-                }
-
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
     }
