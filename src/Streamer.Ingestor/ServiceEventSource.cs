@@ -9,7 +9,7 @@ using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace Streamer.Ingestor
 {
-    [EventSource(Name = "MyCompany-Streamer.Application-Streamer.Ingestor")]
+    [EventSource(Name = "Microsoft-Streamer.Application-Streamer.Ingestor")]
     internal sealed class ServiceEventSource : EventSource
     {
         public static readonly ServiceEventSource Current = new ServiceEventSource();

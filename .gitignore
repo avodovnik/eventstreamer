@@ -328,3 +328,6 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+# A Workaround for Service Fabric's Secret handling
+*.local.xml

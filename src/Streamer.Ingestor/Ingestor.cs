@@ -138,6 +138,7 @@ namespace Streamer.Ingestor
             var waitTime = TimeSpan.FromSeconds(5);
 
             // TODO: instantiate the http client
+            long count = 0;
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -146,10 +147,14 @@ namespace Streamer.Ingestor
 
                 if(eventData?.Count() > 0)
                 {
+                    count += eventData.Count();
+
                     ServiceEventSource.Current.ServiceMessage(this.Context, 
-                        "Data read from event hub. I've read {0} messages, last offset was {1}.", 
+                        "Data read from event hub partition {2}. I've read {0} messages, last offset was {1}. Total count: {3}", 
                         eventData.Count(), 
-                        eventData.Last().SystemProperties.Offset);
+                        eventData.Last().SystemProperties.Offset,
+                        servicePartitionKey,
+                        count);
                 }
 
                 // TODO: this is where we parse the events

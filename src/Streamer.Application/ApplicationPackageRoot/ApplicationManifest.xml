@@ -7,6 +7,7 @@
     <Parameter Name="Streamer.Ingestor_MinReplicaSetSize" DefaultValue="1" />
     <Parameter Name="Streamer.Ingestor_PartitionCount" DefaultValue="1" />
     <Parameter Name="Streamer.Ingestor_TargetReplicaSetSize" DefaultValue="1" />
+    <Parameter Name="Streamer.Ingestor_EventHubConnectionString" DefaultValue="" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
@@ -17,7 +18,15 @@
   </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="Streamer.IngestorPkg" ServiceManifestVersion="1.0.0" />
-    <ConfigOverrides />
+    <ConfigOverrides>
+      <ConfigOverride Name="Config">
+        <Settings>
+          <Section Name="EventHubConfiguration">
+            <Parameter Name="ConnectionString" Value="[Streamer.Ingestor_EventHubConnectionString]" />
+          </Section>
+        </Settings>
+      </ConfigOverride>
+    </ConfigOverrides>
   </ServiceManifestImport>
   <DefaultServices>
     <!-- The section below creates instances of service types, when an instance of this 
