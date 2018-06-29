@@ -15,6 +15,9 @@ using Streamer.Ingestor.Extensions;
 
 namespace Streamer.Ingestor
 {
+
+    // TODO: https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-reliable-services-communication-remoting
+
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>

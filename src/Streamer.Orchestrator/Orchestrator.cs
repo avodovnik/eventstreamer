@@ -2,26 +2,30 @@
 using System.Collections.Generic;
 using System.Fabric;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Data;
+using Streamer.Common.Contracts;
 
 namespace Streamer.Orchestrator
 {
     /// <summary>
     /// The FabricRuntime creates an instance of this class for each service type instance. 
     /// </summary>
-    internal sealed class Orchestrator : StatefulService
+    internal sealed class Orchestrator : StatefulService, IOrchestrator
     {
         public Orchestrator(StatefulServiceContext context)
             : base(context)
         { }
+
+        public long OrchestrateWorker(WorkerDescription description)
+        {
+            return (long)new Random().NextDouble();
+        }
 
         /// <summary>
         /// Optional override to create listeners (like tcp, http) for this service instance.
@@ -31,9 +35,10 @@ namespace Streamer.Orchestrator
         {
             // instantiate this, and save for later
             var fabricClient = new FabricClient();
-            
-            return new ServiceReplicaListener[]
-            {
+           
+            var list = new List<ServiceReplicaListener>(this.CreateServiceRemotingReplicaListeners());
+
+            list.Add(
                 new ServiceReplicaListener(serviceContext =>
                     new KestrelCommunicationListener(serviceContext, (url, listener) =>
                     {
@@ -51,8 +56,9 @@ namespace Streamer.Orchestrator
                                     .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.UseUniqueServiceUrl)
                                     .UseUrls(url)
                                     .Build();
-                    }))
-            };
+                    })));
+
+            return list;
         }
     }
 }
