@@ -8,9 +8,12 @@ using System.Threading.Tasks;
 using Microsoft.Azure.EventHubs;
 using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
+using Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client;
 using Microsoft.ServiceFabric.Services.Runtime;
-
+using Streamer.Common.Contracts;
 using Streamer.Ingestor.Extensions;
 
 namespace Streamer.Ingestor
@@ -25,10 +28,18 @@ namespace Streamer.Ingestor
     {
         private const string OffsetDictionaryName = "ingestor.OffsetDictionary";
         private const string EpochDictionaryName = "ingestor.EpochDictionary";
+        private IOrchestrator orchestratorClient;
 
         public Ingestor(StatefulServiceContext context)
             : base(context)
-        { }
+        {
+            var proxyFactory = new ServiceProxyFactory((c) =>
+            {
+                return new FabricTransportServiceRemotingClientFactory();
+            });
+
+            orchestratorClient = proxyFactory.CreateServiceProxy<IOrchestrator>(new Uri(Common.Names.OrchestratorServiceUri), new ServicePartitionKey(1));
+        }
 
         /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
@@ -58,10 +69,11 @@ namespace Streamer.Ingestor
                 await tx.CommitAsync();
 
                 EventPosition eventPosition;
-                if(offsetResult.HasValue)
+                if (offsetResult.HasValue)
                 {
                     eventPosition = EventPosition.FromOffset(offsetResult.Value);
-                } else
+                }
+                else
                 {
                     // TODO: make this configurable behaviour 
                     eventPosition = EventPosition.FromStart();
@@ -147,17 +159,20 @@ namespace Streamer.Ingestor
                 cancellationToken.ThrowIfCancellationRequested();
 
                 IEnumerable<EventData> eventData = await partitionReceiever.ReceiveAsync(eventHubMaxBatchSize, waitTime);
+                var workerResult = await orchestratorClient.OrchestrateWorker();
 
-                if(eventData?.Count() > 0)
+                if (eventData?.Count() > 0)
                 {
                     count += eventData.Count();
 
-                    ServiceEventSource.Current.ServiceMessage(this.Context, 
-                        "Data read from event hub partition {2}. I've read {0} messages, last offset was {1}. Total count: {3}", 
-                        eventData.Count(), 
+                    ServiceEventSource.Current.ServiceMessage(this.Context,
+                        "Data read from event hub partition {2}. I've read {0} messages, last offset was {1}. Total count: {3}. Orchestrator said: {4}",
+                        eventData.Count(),
                         eventData.Last().SystemProperties.Offset,
                         servicePartitionKey,
-                        count);
+                        count,
+                        workerResult
+                        );
                 }
 
                 // TODO: this is where we parse the events

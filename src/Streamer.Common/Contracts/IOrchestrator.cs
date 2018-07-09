@@ -1,5 +1,8 @@
-﻿
-using Microsoft.ServiceFabric.Services.Remoting;
+﻿using Microsoft.ServiceFabric.Services.Remoting;
+using Microsoft.ServiceFabric.Services.Remoting.FabricTransport;
+using System.Threading.Tasks;
+
+[assembly: FabricTransportServiceRemotingProvider(RemotingListener = RemotingListener.V2Listener, RemotingClient = RemotingClient.V2Client)]
 
 namespace Streamer.Common.Contracts
 {
@@ -10,6 +13,6 @@ namespace Streamer.Common.Contracts
         /// </summary>
         /// <param name="description"></param>
         /// <returns></returns>
-        long OrchestrateWorker(WorkerDescription description);
+        Task<long> OrchestrateWorker();
     }
 }

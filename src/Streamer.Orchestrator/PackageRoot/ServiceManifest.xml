@@ -24,4 +24,10 @@
        independently-updateable and versioned set of custom configuration settings for your service. -->
   <ConfigPackage Name="Config" Version="1.0.0" />
 
+  <Resources>
+    <Endpoints>
+      <Endpoint Name="ServiceEndpointV2" />
+    </Endpoints>
+  </Resources>
+
 </ServiceManifest>

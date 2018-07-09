@@ -10,6 +10,7 @@ using Microsoft.ServiceFabric.Services.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Data;
 using Streamer.Common.Contracts;
+using System.Threading.Tasks;
 
 namespace Streamer.Orchestrator
 {
@@ -22,9 +23,9 @@ namespace Streamer.Orchestrator
             : base(context)
         { }
 
-        public long OrchestrateWorker(WorkerDescription description)
+        public async Task<long> OrchestrateWorker()
         {
-            return (long)new Random().NextDouble();
+            return await Task.Run(() => (long)(new Random().NextDouble() * 100));
         }
 
         /// <summary>
@@ -35,7 +36,7 @@ namespace Streamer.Orchestrator
         {
             // instantiate this, and save for later
             var fabricClient = new FabricClient();
-           
+
             var list = new List<ServiceReplicaListener>(this.CreateServiceRemotingReplicaListeners());
 
             list.Add(
