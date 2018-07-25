@@ -60,6 +60,9 @@ namespace Streamer.Orchestrator.Controllers
         [Route("{name}")]
         public async Task<IActionResult> Post([FromRoute] string name)
         {
+            ServiceEventSource.Current.ServiceMessage(this._serviceContext, $"Spinning up ingestion worker {name}");
+
+
             // establish the information for the event hub, to which we're connecting
             // load the connection string from event hub
             var ehConfiguration = this._serviceContext.CodePackageActivationContext
@@ -77,6 +80,8 @@ namespace Streamer.Orchestrator.Controllers
             // verify the partition exists
             var eventHubInfo = await client.GetRuntimeInformationAsync();
 
+            ServiceEventSource.Current.ServiceMessage(this._serviceContext, $"Ingestion worker {name} will connect to EH {client.EventHubName}");
+
             var lowKey = 0;
             var highKey = eventHubInfo.PartitionCount - 1;
 
@@ -92,6 +97,10 @@ namespace Streamer.Orchestrator.Controllers
                 ServiceName = new System.Uri(svcName)
             });
 
+            ServiceEventSource.Current.ServiceMessage(this._serviceContext, $"Ingestion worker {name} spun up on {svcName}");
+
+            // store the name of the ingestor for the service in the dictionary, so that we can monitor this
+            // outside the SF portal
             using (var tx = this._stateManager.CreateTransaction())
             {
                 await _ingestorDictionary.AddAsync(tx, svcName, eventHubInfo.PartitionCount.ToString());
@@ -109,14 +118,18 @@ namespace Streamer.Orchestrator.Controllers
             var appName = _serviceContext.CodePackageActivationContext.ApplicationName;
             var svcName = $"{appName}/{Names.IngestorSuffix}/{name}";
 
+            // request deletion...
             await _fabricClient.ServiceManager.DeleteServiceAsync(new DeleteServiceDescription(new System.Uri(svcName)));
 
+            // ... but also remove the name of the ingestor service from the dictionary
             using (var tx = this._stateManager.CreateTransaction())
             {
                 await _ingestorDictionary.TryRemoveAsync(tx, svcName);
 
                 await tx.CommitAsync();
             }
+
+            ServiceEventSource.Current.ServiceMessage(this._serviceContext, $"Ingestion worker {name} deleted.");
 
             return Ok();
         }

@@ -164,7 +164,7 @@ namespace Streamer.Ingestor
                 if (eventData?.Count() > 0)
                 {
                     count += eventData.Count();
-
+                    
                     var workerResult = await workerResultTask;
                     ServiceEventSource.Current.ServiceMessage(this.Context,
                         "Data read from event hub partition {2}. I've read {0} messages, last offset was {1}. Total count: {3}. Orchestrator said: {4}",
