@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Streamer.Ingestor.Extensions
+namespace Streamer.Common.Extensions
 {
     public static class ConfigurationExtensions
     {

@@ -23,8 +23,9 @@ namespace Streamer.Orchestrator
             : base(context)
         { }
 
-        public async Task<long> OrchestrateWorker()
+        public async Task<long> OrchestrateWorker(WorkerDescription workerDescription)
         {
+            ServiceEventSource.Current.ServiceMessage(this.Context, $"Orchestrate worker called for {workerDescription.Identifier}");
             return await Task.Run(() => (long)(new Random().NextDouble() * 100));
         }
 

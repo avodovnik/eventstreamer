@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 
 namespace Streamer.Orchestrator.Models
 {
+    // not used at the moment
+    [Obsolete]
     public class IngestionApplicationParams
     {
-        public string ConnectionString { get; set; }
-        
+        // public string ConnectionString { get; set; }
+
     }
 }

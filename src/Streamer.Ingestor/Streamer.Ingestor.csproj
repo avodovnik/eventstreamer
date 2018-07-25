@@ -9,9 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.EventHubs" Version="2.1.0" />
-    <PackageReference Include="Microsoft.ServiceFabric" Version="6.2.301" />
-    <PackageReference Include="Microsoft.ServiceFabric.Data" Version="3.1.301" />
-    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="3.1.301" />
+    <PackageReference Include="Microsoft.ServiceFabric" Version="6.3.162" />
+    <PackageReference Include="Microsoft.ServiceFabric.Data" Version="3.2.162" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="3.2.162" />
   </ItemGroup>
 
   <ItemGroup>

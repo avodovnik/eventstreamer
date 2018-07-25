@@ -14,7 +14,7 @@ using Microsoft.ServiceFabric.Services.Remoting.Client;
 using Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Streamer.Common.Contracts;
-using Streamer.Ingestor.Extensions;
+using Streamer.Common.Extensions;
 
 namespace Streamer.Ingestor
 {
@@ -159,12 +159,13 @@ namespace Streamer.Ingestor
                 cancellationToken.ThrowIfCancellationRequested();
 
                 IEnumerable<EventData> eventData = await partitionReceiever.ReceiveAsync(eventHubMaxBatchSize, waitTime);
-                var workerResult = await orchestratorClient.OrchestrateWorker();
+                var workerResultTask = orchestratorClient.OrchestrateWorker(new WorkerDescription() { Identifier = Guid.NewGuid().ToString() });
 
                 if (eventData?.Count() > 0)
                 {
                     count += eventData.Count();
 
+                    var workerResult = await workerResultTask;
                     ServiceEventSource.Current.ServiceMessage(this.Context,
                         "Data read from event hub partition {2}. I've read {0} messages, last offset was {1}. Total count: {3}. Orchestrator said: {4}",
                         eventData.Count(),

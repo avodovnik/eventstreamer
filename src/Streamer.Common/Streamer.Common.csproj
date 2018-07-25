@@ -1,15 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Extensions\" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services.Remoting" Version="3.2.162" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.ServiceFabric.Services.Remoting" Version="3.1.301" />
-  </ItemGroup>
+  <PropertyGroup>
+    <RuntimeFrameworkVersion>2.1.2</RuntimeFrameworkVersion>
+  </PropertyGroup>
 
 </Project>
