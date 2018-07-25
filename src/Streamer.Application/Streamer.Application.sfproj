@@ -35,6 +35,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Streamer.Ingestor\Streamer.Ingestor.csproj" />
     <ProjectReference Include="..\Streamer.Orchestrator\Streamer.Orchestrator.csproj" />
+    <ProjectReference Include="..\Streamer.Processor\Streamer.Processor.csproj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
   <PropertyGroup>

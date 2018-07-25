@@ -15,6 +15,6 @@ namespace Streamer.Common.Contracts
         /// </summary>
         /// <param name="description"></param>
         /// <returns></returns>
-        Task<long> OrchestrateWorker(WorkerDescription workerDescription);
+        Task<string> OrchestrateWorker(WorkerDescription workerDescription);
     }
 }

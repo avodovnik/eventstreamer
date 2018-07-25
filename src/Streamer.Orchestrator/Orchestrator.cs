@@ -11,6 +11,9 @@ using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Data;
 using Streamer.Common.Contracts;
 using System.Threading.Tasks;
+using Microsoft.ServiceFabric.Data.Collections;
+using Streamer.Common;
+using System.Fabric.Description;
 
 namespace Streamer.Orchestrator
 {
@@ -19,14 +22,80 @@ namespace Streamer.Orchestrator
     /// </summary>
     internal sealed class Orchestrator : StatefulService, IOrchestrator
     {
+        private class ProcessorInformation
+        {
+            public string Address { get; set; }
+            public long TicksLastUpdated { get; set; }
+        }
+
+        private IReliableDictionary<string, ProcessorInformation> _processorDictionary;
+        private readonly FabricClient _fabricClient;
+
         public Orchestrator(StatefulServiceContext context)
             : base(context)
-        { }
+        {
+            this._processorDictionary = this.StateManager
+                            .GetOrAddAsync<IReliableDictionary<string, ProcessorInformation>>("orchestrator.ProcessorDictionary").Result;
+            this._fabricClient = new FabricClient();
+        }
 
-        public async Task<long> OrchestrateWorker(WorkerDescription workerDescription)
+        public async Task<string> OrchestrateWorker(WorkerDescription workerDescription)
         {
             ServiceEventSource.Current.ServiceMessage(this.Context, $"Orchestrate worker called for {workerDescription.Identifier}");
-            return await Task.Run(() => (long)(new Random().NextDouble() * 100));
+
+            var address = String.Empty;
+
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                var result = await _processorDictionary.TryGetValueAsync(tx, workerDescription.Identifier);
+                if (result.HasValue)
+                {
+                    var info = result.Value;
+
+                    await _processorDictionary.TryUpdateAsync(tx, workerDescription.Identifier,
+                        new ProcessorInformation()
+                        {
+                            Address = info.Address,
+                            TicksLastUpdated = DateTime.UtcNow.Ticks
+                        },
+                        info);
+
+                    await tx.CommitAsync();
+
+                    address = info.Address;
+                }
+                else
+                {
+                    // spin up the new service here
+                    ServiceEventSource.Current.ServiceMessage(this.Context, $"Creating processor for {workerDescription.Identifier}");
+
+                    var appName = Context.CodePackageActivationContext.ApplicationName;
+                    var svcName = $"{appName}/{Names.ProcessorSuffix}/{workerDescription.Identifier}";
+
+                    await _fabricClient.ServiceManager.CreateServiceAsync(new StatefulServiceDescription()
+                    {
+                        HasPersistedState = true,
+                        PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(1),
+                        ServiceTypeName = Names.ProcessorTypeName,
+                        ApplicationName = new System.Uri(appName),
+                        ServiceName = new System.Uri(svcName)
+                    });
+
+                    ServiceEventSource.Current.ServiceMessage(this.Context, $"Processor for {workerDescription.Identifier} running on {svcName}");
+
+                    await _processorDictionary.AddAsync(tx, workerDescription.Identifier, new ProcessorInformation()
+                    {
+                        Address = svcName,
+                        TicksLastUpdated = DateTime.UtcNow.Ticks
+                    });
+
+                    address = svcName;
+                }
+
+                await tx.CommitAsync();
+            }
+
+            return address;
         }
 
         /// <summary>

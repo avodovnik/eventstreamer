@@ -159,13 +159,13 @@ namespace Streamer.Ingestor
                 cancellationToken.ThrowIfCancellationRequested();
 
                 IEnumerable<EventData> eventData = await partitionReceiever.ReceiveAsync(eventHubMaxBatchSize, waitTime);
-                var workerResultTask = orchestratorClient.OrchestrateWorker(new WorkerDescription() { Identifier = Guid.NewGuid().ToString() });
+                var address = await orchestratorClient.OrchestrateWorker(new WorkerDescription() { Identifier = Guid.NewGuid().ToString() });
 
                 if (eventData?.Count() > 0)
                 {
                     count += eventData.Count();
                     
-                    var workerResult = await workerResultTask;
+                    var workerResult = address;
                     ServiceEventSource.Current.ServiceMessage(this.Context,
                         "Data read from event hub partition {2}. I've read {0} messages, last offset was {1}. Total count: {3}. Orchestrator said: {4}",
                         eventData.Count(),
