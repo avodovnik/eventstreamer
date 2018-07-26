@@ -30,10 +30,10 @@ namespace Streamer.Processor
             QueueName = $"processor.queue.{name}";
         }
 
-        public async Task<bool> Process(DataPoint point)
+        public async Task<bool> Process(DataPoint[] points)
         {
             // TODO: we might mark this as true, and handle "poison" messages
-            if (point == null) return false;
+            if (points == null || points.Length == 0) return false;
 
             if (_queue == null)
             {
@@ -41,16 +41,21 @@ namespace Streamer.Processor
                 _queue = await this.StateManager.GetOrAddAsync<IReliableConcurrentQueue<DataPoint>>(QueueName);
             }
 
+            var firstPoint = points[0];
             //var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
             ServiceEventSource.Current.ServiceMessage(this.Context,
                 "Process called in Processor, for point: {0} on session {1} through sensor type {2}",
-                point.Timestamp,
-                point.SessionId,
-                point.SensorType);
+                firstPoint.Timestamp,
+                firstPoint.SessionId,
+                firstPoint.SensorType);
 
             using (var tx = this.StateManager.CreateTransaction())
             {
-                await _queue.EnqueueAsync(tx, point);
+                foreach (var point in points)
+                {
+                    await _queue.EnqueueAsync(tx, point);
+                }
+
                 await tx.CommitAsync();
             }
 

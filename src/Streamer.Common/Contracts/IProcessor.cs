@@ -12,6 +12,6 @@ namespace Streamer.Common.Contracts
         /// </summary>
         /// <param name="points"></param>
         /// <returns>Returns true if the processing is successful.</returns>
-        Task<bool> Process(DataPoint point);
+        Task<bool> Process(DataPoint[] point);
     }
 }

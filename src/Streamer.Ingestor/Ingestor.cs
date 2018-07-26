@@ -202,37 +202,32 @@ namespace Streamer.Ingestor
                     workers.Add(key.Id, processor);
                 }
 
-                foreach(var group in groups)
-                {
+                var page = 0;
+                var pageSize = 100;
 
-                }
-
-                // now we can go through the messages
-                // but we won't go through it in groups, to allow for offsetting this properly
-                string lastOffset = String.Empty;
-                long i = 0;
-                foreach (var message in messages)
+                while (true)
                 {
-                    //$"{appName}/{Names.ProcessorSuffix}/{workerDescription.Identifier}";
-                    if (!await workers[message.Id].Process(message.DataPoint))
+                    var buffer = messages.Skip(page * pageSize).Take(pageSize);
+                    if (!buffer.Any()) break;
+
+                    var lastMessage = buffer.Last();
+
+                    foreach (var bufferedGroup in buffer.GroupBy(x => x.Id))
                     {
-                        // what do we do? 
-                        ServiceEventSource.Current.ServiceMessage(this.Context,
-                                "Processing failed for message index {0}. Throwing exception.", i);
-                        throw new InvalidOperationException("Processign failed. False returned from worker process.");
+                        var worker = workers[bufferedGroup.Key];
+                        if (!await worker.Process(bufferedGroup.Select(x => x.DataPoint).ToArray()))
+                        {
+                            // what do we do? 
+                            ServiceEventSource.Current.ServiceMessage(this.Context,
+                                    "Processing failed for message page {0}. Throwing exception.", page);
+                            throw new InvalidOperationException("Processing failed. False returned from worker process.");
+                        }
                     }
 
-                    i++;
+                    page++;
 
-                    // TODO: not sure this works
-                    if (i % 50 == 0)
-                    {
-                        await Checkpoint(message, offsetDictionary);
-                    }
+                    await Checkpoint(lastMessage, offsetDictionary);
                 }
-
-                // make sure we checkpoint the last message as well
-                await Checkpoint(messages.Last(), offsetDictionary);
             }
         }
 
