@@ -174,7 +174,8 @@ namespace Streamer.Ingestor
                        count
                        );
 
-                var messages = eventData.Select(x => new MessageWrapper(x, _router));
+                //we're enumerating through anyway so may as well ToArray it here.
+                var messages = eventData.Select(x => new MessageWrapper(x, _router)).ToArray();
 
                 var groups = messages.GroupBy(x => x.Id);
                 var keys = groups
@@ -207,7 +208,8 @@ namespace Streamer.Ingestor
 
                 while (true)
                 {
-                    var buffer = messages.Skip(page * pageSize).Take(pageSize);
+                    ArraySegment<MessageWrapper> buffer = new ArraySegment<MessageWrapper>(messages, page * pageSize, pageSize);
+
                     if (!buffer.Any()) break;
 
                     var lastMessage = buffer.Last();
