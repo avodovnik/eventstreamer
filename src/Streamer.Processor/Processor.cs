@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Fabric;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
@@ -14,16 +16,23 @@ namespace Streamer.Processor
     /// </summary>
     internal sealed class Processor : StatefulService, IProcessor
     {
+        int _count = 0;
+
         public Processor(StatefulServiceContext context)
             : base(context)
         { }
 
-        public bool Process(DataPoint point)
+        public async Task<bool> Process(DataPoint point)
         {
             ServiceEventSource.Current.ServiceMessage(this.Context,
-                "Process called in Processor");
+                "Process called in Processor, for point: {0} on session {1} through sensor type {2}",
+                point.Timestamp,
+                point.SessionId,
+                point.SensorType);
 
-            return false;
+            _count++;
+
+            return await Task.FromResult(true);
         }
 
         /// <summary>
@@ -39,6 +48,21 @@ namespace Streamer.Processor
             var fabricClient = new FabricClient();
 
             return new List<ServiceReplicaListener>(this.CreateServiceRemotingReplicaListeners());
+        }
+
+        protected override async Task RunAsync(CancellationToken cancellationToken)
+        {
+            // not sure this works?
+            while(true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                Thread.Sleep(TimeSpan.FromMinutes(1));
+
+                ServiceEventSource.Current.ServiceMessage(this.Context,
+                    "The run async has been called. Current state is: {0}",
+                    _count);
+            }
         }
     }
 }

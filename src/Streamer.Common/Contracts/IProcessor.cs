@@ -1,6 +1,7 @@
 ﻿using Microsoft.ServiceFabric.Services.Remoting;
 using Streamer.Common.Models;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Streamer.Common.Contracts
 {
@@ -11,6 +12,6 @@ namespace Streamer.Common.Contracts
         /// </summary>
         /// <param name="points"></param>
         /// <returns>Returns true if the processing is successful.</returns>
-        bool Process(DataPoint point);
+        Task<bool> Process(DataPoint point);
     }
 }

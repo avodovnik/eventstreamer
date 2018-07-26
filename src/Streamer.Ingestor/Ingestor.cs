@@ -178,22 +178,28 @@ namespace Streamer.Ingestor
 
                 var groups = messages.GroupBy(x => x.Id);
                 var keys = groups
-                    .Select(x => orchestratorClient.OrchestrateWorker(new WorkerDescription() { Identifier = x.Key }))
+                    .Select(x => new
+                    {
+                        // we're creating this object because we need both, the id and address
+                        Id = x.Key,
+                        Task = orchestratorClient.OrchestrateWorker(new WorkerDescription() { Identifier = x.Key })
+                    })
                     .ToArray();
 
                 // the operation to call the workers is async, and a bunch of them can run in parallel, so let's wait
                 // until they all finish to get the keys out
-                Task.WaitAll(keys);
+                Task.WaitAll(keys.Select(x => x.Task).ToArray(), cancellationToken);
 
                 var workers = new Dictionary<string, IProcessor>();
 
                 // now we need to actually create the service proxies 
                 foreach (var key in keys)
                 {
-                    var id = key.Result;
-                    var processor = _proxyFactory.CreateServiceProxy<IProcessor>(new Uri(id), new ServicePartitionKey(1));
+                    var address = key.Task.Result;
+                    var processor = _proxyFactory.CreateServiceProxy<IProcessor>(new Uri(address), new ServicePartitionKey(1));
 
-                    workers.Add(id, processor);
+                    // we need to attach to the ID, not the address!
+                    workers.Add(key.Id, processor);
                 }
 
                 // now we can go through the messages
@@ -202,7 +208,8 @@ namespace Streamer.Ingestor
                 long i = 0;
                 foreach (var message in messages)
                 {
-                    if (!workers[message.Id].Process(message.DataPoint))
+                    //$"{appName}/{Names.ProcessorSuffix}/{workerDescription.Identifier}";
+                    if (!await workers[message.Id].Process(message.DataPoint))
                     {
                         // what do we do? 
                         ServiceEventSource.Current.ServiceMessage(this.Context,

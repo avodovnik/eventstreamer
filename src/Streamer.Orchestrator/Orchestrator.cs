@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Data.Collections;
 using Streamer.Common;
 using System.Fabric.Description;
+using System.Runtime.Serialization;
 
 namespace Streamer.Orchestrator
 {
@@ -22,9 +23,13 @@ namespace Streamer.Orchestrator
     /// </summary>
     internal sealed class Orchestrator : StatefulService, IOrchestrator
     {
+        [DataContract]
         private class ProcessorInformation
         {
+            [DataMember]
             public string Address { get; set; }
+
+            [DataMember]
             public long TicksLastUpdated { get; set; }
         }
 
@@ -94,9 +99,10 @@ namespace Streamer.Orchestrator
                     });
 
                     address = svcName;
+
+                    await tx.CommitAsync();
                 }
 
-                await tx.CommitAsync();
             }
 
             return address;
