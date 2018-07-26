@@ -2,10 +2,6 @@
 using Microsoft.ServiceFabric.Services.Remoting.FabricTransport;
 using System.Threading.Tasks;
 
-[assembly: FabricTransportServiceRemotingProvider(
-    RemotingListenerVersion = RemotingListenerVersion.V2, 
-    RemotingClientVersion = RemotingClientVersion.V2)]
-
 namespace Streamer.Common.Contracts
 {
     public interface IOrchestrator : IService

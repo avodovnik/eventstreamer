@@ -15,8 +15,11 @@ namespace Streamer.Ingestor
         {
             try
             {
+                // TODO: this should be done differently
+                var router = new SessionIdRouter();
+
                 ServiceRuntime.RegisterServiceAsync("Streamer.IngestorType",
-                    context => new Ingestor(context)).GetAwaiter().GetResult();
+                    context => new Ingestor(context, router)).GetAwaiter().GetResult();
 
                 ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(Ingestor).Name);
 
