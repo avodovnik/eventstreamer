@@ -34,13 +34,17 @@ namespace Streamer.Orchestrator
         public Orchestrator(StatefulServiceContext context)
             : base(context)
         {
-            this._processorDictionary = this.StateManager
-                            .GetOrAddAsync<IReliableDictionary<string, ProcessorInformation>>("orchestrator.ProcessorDictionary").Result;
             this._fabricClient = new FabricClient();
         }
 
         public async Task<string> OrchestrateWorker(WorkerDescription workerDescription)
         {
+            if(_processorDictionary == null)
+            {
+                this._processorDictionary = this.StateManager
+                            .GetOrAddAsync<IReliableDictionary<string, ProcessorInformation>>("orchestrator.ProcessorDictionary").Result;
+            }
+
             ServiceEventSource.Current.ServiceMessage(this.Context, $"Orchestrate worker called for {workerDescription.Identifier}");
 
             var address = String.Empty;

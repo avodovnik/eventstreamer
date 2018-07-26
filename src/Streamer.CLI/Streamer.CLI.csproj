@@ -11,6 +11,10 @@
     <PackageReference Include="Microsoft.Azure.EventHubs" Version="2.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Streamer.Common\Streamer.Common.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <RuntimeFrameworkVersion>2.1.2</RuntimeFrameworkVersion>
   </PropertyGroup>

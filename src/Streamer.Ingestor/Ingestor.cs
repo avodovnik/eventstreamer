@@ -241,6 +241,7 @@ namespace Streamer.Ingestor
         {
             public MessageWrapper(EventData x, IRouter router)
             {
+                // TODO: this will fail horribly for poison messages
                 this.DataPoint = JsonConvert.DeserializeObject<Common.Models.DataPoint>(
                         Encoding.UTF8.GetString(x.Body.Array, x.Body.Offset, x.Body.Count));
 

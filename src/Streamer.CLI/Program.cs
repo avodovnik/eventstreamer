@@ -212,6 +212,9 @@ namespace Streamer.CLI
                 Console.WriteLine($"Thread started to send to {id}, sending {n} events...");
 
                 var epoch = DateTime.UtcNow;
+                var sessionId = Guid.NewGuid();
+                var deviceId = Guid.NewGuid();
+
                 EventDataBatch batch = null;
                 while (n >= 0)
                 {
@@ -220,7 +223,7 @@ namespace Streamer.CLI
                         batch = sender.CreateBatch(new BatchOptions());
                     }
 
-                    var e = GenerateEvent(epoch, si.SendCount);
+                    var e = GenerateEvent(epoch, si.SendCount, sessionId, deviceId);
 
                     if (!batch.TryAdd(e))
                     {
@@ -254,13 +257,15 @@ namespace Streamer.CLI
             return si;
         }
 
-        private static EventData GenerateEvent(DateTime timestamp, double index)
+        private static EventData GenerateEvent(DateTime timestamp, double index, Guid sessionId, Guid deviceId)
         {
             return new EventData(System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
-                new EventSkeleton()
+                new Streamer.Common.Models.DataPoint()
                 {
-                    Index = index,
-                    Timestamp = timestamp
+                    Timestamp = timestamp,
+                    SessionId = sessionId.ToString(),
+                    DeviceId = deviceId.ToString(),
+                    SensorType = "Streamer.CLI.v1"
                 }
                )));
         }
