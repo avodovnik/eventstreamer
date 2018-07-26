@@ -51,6 +51,7 @@ namespace Streamer.Processor
             using (var tx = this.StateManager.CreateTransaction())
             {
                 await _queue.EnqueueAsync(tx, point);
+                await tx.CommitAsync();
             }
 
             _count++;
@@ -90,7 +91,7 @@ namespace Streamer.Processor
                 {
                     // process the queue
                     ConditionalValue<DataPoint> point;
-                    while ((point = await _queue.TryDequeueAsync(tx, cancellationToken, TimeSpan.FromSeconds(1))).HasValue)
+                    while ((point = await _queue.TryDequeueAsync(tx, cancellationToken)).HasValue)
                     {
                         buffer.Add(point.Value);
 
@@ -111,16 +112,15 @@ namespace Streamer.Processor
                     }
                 }
 
-                ServiceEventSource.Current.ServiceMessage(this.Context,
-                    "The run async has been called. Current state is: {0}",
-                    _count);
-
-                Thread.Sleep(TimeSpan.FromMinutes(1));
+                Thread.Sleep(TimeSpan.FromSeconds(10));
             }
         }
 
         private bool Flush(List<DataPoint> buffer)
         {
+            // skip empty buffers
+            if (buffer.Count == 0) return true;
+
             ServiceEventSource.Current.ServiceMessage(this.Context,
                  "Flushing buffer of {0} messages, in {1}",
                  buffer.Count,
