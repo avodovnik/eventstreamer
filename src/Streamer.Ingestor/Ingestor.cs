@@ -202,6 +202,11 @@ namespace Streamer.Ingestor
                     workers.Add(key.Id, processor);
                 }
 
+                foreach(var group in groups)
+                {
+
+                }
+
                 // now we can go through the messages
                 // but we won't go through it in groups, to allow for offsetting this properly
                 string lastOffset = String.Empty;
