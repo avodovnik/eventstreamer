@@ -136,7 +136,7 @@ namespace Streamer.Processor
             return state;
         }
 
-        private bool DoProcessing(List<DataPoint> buffer)
+        private bool DoProcessing(List<DataPoint> buffer, CancellationToken cancellationToken)
         {
             // DO PROCESSING HERE
             return true;
