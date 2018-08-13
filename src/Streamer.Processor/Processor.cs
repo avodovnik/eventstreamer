@@ -100,14 +100,14 @@ namespace Streamer.Processor
                     {
                         buffer.Add(point.Value);
 
-                        if(buffer.Count >= 100)
+                        if (buffer.Count >= 100)
                         {
-                            state = state && Flush(buffer);
+                            state = state && Flush(buffer, cancellationToken);
                         }
                     }
 
                     // if all the flushes succeed
-                    if (state && Flush(buffer))
+                    if (state && Flush(buffer, cancellationToken))
                     {
                         await tx.CommitAsync();
                     }
@@ -121,7 +121,7 @@ namespace Streamer.Processor
             }
         }
 
-        private bool Flush(List<DataPoint> buffer)
+        private bool Flush(List<DataPoint> buffer, CancellationToken cancellationToken)
         {
             // skip empty buffers
             if (buffer.Count == 0) return true;
@@ -131,7 +131,7 @@ namespace Streamer.Processor
                  buffer.Count,
                  this.QueueName);
 
-            var state = DoProcessing(buffer);
+            var state = DoProcessing(buffer, cancellationToken);
             buffer.Clear();
             return state;
         }

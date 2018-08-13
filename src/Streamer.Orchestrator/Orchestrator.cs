@@ -44,7 +44,7 @@ namespace Streamer.Orchestrator
 
         public async Task<string> OrchestrateWorker(WorkerDescription workerDescription)
         {
-            if(_processorDictionary == null)
+            if (_processorDictionary == null)
             {
                 this._processorDictionary = this.StateManager
                             .GetOrAddAsync<IReliableDictionary<string, ProcessorInformation>>("orchestrator.ProcessorDictionary").Result;
@@ -56,20 +56,57 @@ namespace Streamer.Orchestrator
 
             using (var tx = this.StateManager.CreateTransaction())
             {
-                var result = await _processorDictionary.TryGetValueAsync(tx, workerDescription.Identifier);
+                ConditionalValue<ProcessorInformation> result = new ConditionalValue<ProcessorInformation>(false, null);
+
+                int retryAttempt = 0;
+
+                getProcessorInfo:
+                try
+                {
+                    result = await _processorDictionary.TryGetValueAsync(tx, workerDescription.Identifier);
+                }
+                catch (TimeoutException)
+                {
+                    // see below for explanation
+                    if (retryAttempt++ <= 5)
+                    {
+                        goto getProcessorInfo;
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
                 if (result.HasValue)
                 {
                     var info = result.Value;
 
-                    await _processorDictionary.TryUpdateAsync(tx, workerDescription.Identifier,
-                        new ProcessorInformation()
-                        {
-                            Address = info.Address,
-                            TicksLastUpdated = DateTime.UtcNow.Ticks
-                        },
-                        info);
+                    retryAttempt = 0; // reset
+                    // when running on "slow" machines, if the incoming data is bad and incorrectly partitoned
+                    // we will run into time-outs, therefore it is wise to retry the operation, but we'll limit
+                    // it to 5 retry attempts
+                    updateRetry:
+                    try
+                    {
+                        await _processorDictionary.TryUpdateAsync(tx, workerDescription.Identifier,
+                            new ProcessorInformation()
+                            {
+                                Address = info.Address,
+                                TicksLastUpdated = DateTime.UtcNow.Ticks
+                            },
+                            info);
 
-                    await tx.CommitAsync();
+                        await tx.CommitAsync();
+                    }
+                    catch (TimeoutException)
+                    {
+                        retryAttempt++;
+                        if (retryAttempt >= 5) throw;
+
+                        await Task.Delay(100);
+                        goto updateRetry;
+                    }
 
                     address = info.Address;
                 }
@@ -80,27 +117,53 @@ namespace Streamer.Orchestrator
 
                     var appName = Context.CodePackageActivationContext.ApplicationName;
                     var svcName = $"{appName}/{Names.ProcessorSuffix}/{workerDescription.Identifier}";
-
-                    await _fabricClient.ServiceManager.CreateServiceAsync(new StatefulServiceDescription()
-                    {
-                        HasPersistedState = true,
-                        PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(1),
-                        ServiceTypeName = Names.ProcessorTypeName,
-                        ApplicationName = new System.Uri(appName),
-                        ServiceName = new System.Uri(svcName)
-                    });
-
-                    ServiceEventSource.Current.ServiceMessage(this.Context, $"Processor for {workerDescription.Identifier} running on {svcName}");
-
-                    await _processorDictionary.AddAsync(tx, workerDescription.Identifier, new ProcessorInformation()
-                    {
-                        Address = svcName,
-                        TicksLastUpdated = DateTime.UtcNow.Ticks
-                    });
-
                     address = svcName;
 
-                    await tx.CommitAsync();
+                    try
+                    {
+                        await _fabricClient.ServiceManager.CreateServiceAsync(new StatefulServiceDescription()
+                        {
+                            HasPersistedState = true,
+                            PartitionSchemeDescription = new UniformInt64RangePartitionSchemeDescription(1),
+                            ServiceTypeName = Names.ProcessorTypeName,
+                            ApplicationName = new System.Uri(appName),
+                            ServiceName = new System.Uri(svcName)
+                        });
+
+                        ServiceEventSource.Current.ServiceMessage(this.Context, $"Processor for {workerDescription.Identifier} running on {svcName}");
+
+
+                        retryAttempt = 0;
+                        svcToDictionaryAdd:
+                        try
+                        {
+                            await _processorDictionary.AddAsync(tx, workerDescription.Identifier, new ProcessorInformation()
+                            {
+                                Address = svcName,
+                                TicksLastUpdated = DateTime.UtcNow.Ticks
+                            });
+                            await tx.CommitAsync();
+
+                        }
+                        catch (TimeoutException)
+                        {
+                            retryAttempt++;
+                            if (retryAttempt >= 5) throw;
+
+                            await Task.Delay(100);
+
+                            // see above for explanation
+                            goto svcToDictionaryAdd;
+                        }
+
+                    }
+                    catch (FabricElementAlreadyExistsException)
+                    {
+                        // this is a weird case, that happens if the same ID was sent to multiple 
+                        ServiceEventSource.Current.ServiceMessage(this.Context, $"Processor already existed for {workerDescription.Identifier} on {svcName}");
+                        tx.Abort();
+                    }
+
                 }
 
             }
