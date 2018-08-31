@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace Streamer.Common.Models
 {
     [DataContract]
-    // TODO: Move this to a generic project
     public class DataPoint
     {
+        public string Key { get; set; }
+
         [DataMember]
         public DateTime Timestamp { get; set; }
 
