@@ -142,18 +142,12 @@ namespace DispatcherFunction
             var first = buffer.First();
             var countOfFields = first.Values.Count;
 
-            var values = new string[first.Values.Count];
-
-            for (int i = 0; i < countOfFields; i++)
-            {
-                // TODO: this is horrible, but is a quick way to fix the errors
-                values[i] = buffer.Average(x => InternalParse(x.Values[i])).ToString();
-            }
-
             var allValues = new Dictionary<string, string>();
             for (int i = 0; i < countOfFields; i++)
             {
-                allValues.Add(first.Names[i], values[i]);
+                // TODO: this is horrible, but is a quick way to fix the errors
+                var value = buffer.Average(x => InternalParse(x.Values[i])).ToString();
+                allValues.Add(first.Names[i], value);
             }
 
             var o = new
