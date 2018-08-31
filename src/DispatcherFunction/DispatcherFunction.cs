@@ -155,11 +155,10 @@ namespace DispatcherFunction
             dp.Values = new List<string>(values);
 
 
-            // Anze: may god help us
-            var jo = new JObject();
+            var allValues = new Dictionary<string, string>();
             for (int i = 0; i < countOfFields; i++)
             {
-                jo[first.Names[i]] = values[i];
+                allValues.Add(first.Names[i], values[i]);
             }
 
             var o = new
@@ -168,7 +167,7 @@ namespace DispatcherFunction
                 deviceid = first.DeviceId,
                 sessionid = first.SessionId,
                 sessionstart = "",
-                allvalues = jo
+                allvalues = allValues
             };
 
             log.LogInformation($"Row for {playerId}: {JsonConvert.SerializeObject(o)}");
