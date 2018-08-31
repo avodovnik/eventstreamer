@@ -139,7 +139,6 @@ namespace DispatcherFunction
             }
 
             // at this point we have the object, let's average the values for the second
-            var dp = new DataPoint();
             var first = buffer.First();
             var countOfFields = first.Values.Count;
 
@@ -150,10 +149,6 @@ namespace DispatcherFunction
                 // TODO: this is horrible, but is a quick way to fix the errors
                 values[i] = buffer.Average(x => InternalParse(x.Values[i])).ToString();
             }
-
-            dp.Names = first.Names;
-            dp.Values = new List<string>(values);
-
 
             var allValues = new Dictionary<string, string>();
             for (int i = 0; i < countOfFields; i++)
