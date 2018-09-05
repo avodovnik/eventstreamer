@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DispatcherFunction
 {
@@ -19,7 +20,7 @@ namespace DispatcherFunction
         private static string RedisPrefix = "streamer:";
 
         [FunctionName("DispatcherFunction")]
-        public static void Run([EventHubTrigger("final-stream", Connection = "incomingEventHub")]
+        public static async Task Run([EventHubTrigger("final-stream", Connection = "incomingEventHub")]
                 EventData[] messages, ILogger log)
         {
             log.LogInformation($"{messages.Length} Events received.");
@@ -41,7 +42,7 @@ namespace DispatcherFunction
             {
                 //log.LogInformation($"Player {item.Key} has {item.Count()} messages in this batch.");
                 var list = item.ToList();
-                ProcessPlayer(item.Key, item.ToArray(), log);
+                await ProcessPlayerAsync(item.Key, item.ToArray(), log);
             }
 
             stopwatch.Stop();
@@ -63,7 +64,7 @@ namespace DispatcherFunction
             }
         }
 
-        private static void ProcessPlayer(string playerId, (DataPoint point, string strRepresentation)[] messages, ILogger log)
+        private static async Task ProcessPlayerAsync(string playerId, (DataPoint point, string strRepresentation)[] messages, ILogger log)
         {
 
             var cache = RedisConnection.GetDatabase();
@@ -71,11 +72,11 @@ namespace DispatcherFunction
             string startKey = $"{RedisPrefix}player:{playerId}:start";
 
             // check if we have a start
-            var start = cache.StringGet(startKey);
+            var start = await cache.StringGetAsync(startKey);
 
             if (start == RedisValue.Null)
             {
-                cache.StringSet(startKey, messages[0].point.Timestamp.Ticks, TimeSpan.FromDays(1));
+                await cache.StringSetAsync(startKey, messages[0].point.Timestamp.Ticks, TimeSpan.FromDays(1));
                 start = messages[0].point.Timestamp.Ticks;
             }
 
@@ -87,24 +88,24 @@ namespace DispatcherFunction
                 if ((px.Timestamp - startTimeStamp).TotalSeconds >= 1)
                 {
                     // start the countdown! 
-                    cache.StringSet(startKey, px.Timestamp.Ticks);
+                    await cache.StringSetAsync(startKey, px.Timestamp.Ticks);
                     pushTime = true;
                     startTimeStamp = px.Timestamp;
                 }
             }
 
             // put them into the redis queue
-            cache.ListRightPush(queueKey, messages.Select(x => (RedisValue)x.strRepresentation).ToArray());
+            await cache.ListRightPushAsync(queueKey, messages.Select(x => (RedisValue)x.strRepresentation).ToArray());
 
             if (pushTime)
             {
                 // call push time
                 log.LogInformation("Pushing time!");
-                PushTime(playerId, log);
+                await PushTimeAsync(playerId, log);
             }
         }
 
-        private static void PushTime(string playerId, ILogger log)
+        private static async Task PushTimeAsync(string playerId, ILogger log)
         {
             // get the playerId queue and stuff
             var cache = RedisConnection.GetDatabase();
@@ -118,7 +119,7 @@ namespace DispatcherFunction
             List<DataPoint> buffer = new List<DataPoint>();
             while (true)
             {
-                var value = cache.ListLeftPop(queueKey);
+                var value = await cache.ListLeftPopAsync(queueKey);
 
                 if (value == RedisValue.Null)
                 {
@@ -138,27 +139,15 @@ namespace DispatcherFunction
             }
 
             // at this point we have the object, let's average the values for the second
-            var dp = new DataPoint();
             var first = buffer.First();
             var countOfFields = first.Values.Count;
 
-            var values = new string[first.Values.Count];
-
+            var allValues = new Dictionary<string, string>();
             for (int i = 0; i < countOfFields; i++)
             {
                 // TODO: this is horrible, but is a quick way to fix the errors
-                values[i] = buffer.Average(x => InternalParse(x.Values[i])).ToString();
-            }
-
-            dp.Names = first.Names;
-            dp.Values = new List<string>(values);
-
-
-            // Anze: may god help us
-            var jo = new JObject();
-            for (int i = 0; i < countOfFields; i++)
-            {
-                jo[first.Names[i]] = values[i];
+                var value = buffer.Average(x => InternalParse(x.Values[i])).ToString();
+                allValues.Add(first.Names[i], value);
             }
 
             var o = new
@@ -167,7 +156,7 @@ namespace DispatcherFunction
                 deviceid = first.DeviceId,
                 sessionid = first.SessionId,
                 sessionstart = "",
-                allvalues = jo
+                allvalues = allValues
             };
 
             log.LogInformation($"Row for {playerId}: {JsonConvert.SerializeObject(o)}");
