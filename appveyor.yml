@@ -1,7 +1,7 @@
 version: 1.0.{build}
 image: Visual Studio 2017
 before_build:
-- pwsh: dotnet restore
+- pwsh: dotnet restore ./src/EventProcessing.sln
 build:
   project: src/EventProcessing.sln
   verbosity: minimal
