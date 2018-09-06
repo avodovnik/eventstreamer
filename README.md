@@ -1,8 +1,8 @@
 # EventStreamer - Azure Function & Redis 
 
-## Redis Fallback
+This is the Redis implementation of the event streaming through Azure Functions and Redis. 
 
-This branch is the Redis implementation of the same thing, but working purely as an Azure Function.
+[![Build status](https://ci.appveyor.com/api/projects/status/90vp8weadevbwf3m/branch/master?svg=true)](https://ci.appveyor.com/project/avodovnik/eventstreamer/branch/master)
 
 ## What is it? 
 
