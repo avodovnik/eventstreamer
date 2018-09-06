@@ -76,5 +76,5 @@ The `stream` tells the application to _stream_ data into the EventHub, `num` def
 
 ## Known Problems
 
-1) At the moment, Redis is never cleaned, which means that we are getting a ton of unused keys. 
+1) At the moment, Redis is never cleaned, which means that we are getting a ton of unused keys. [Issue #9](https://github.com/avodovnik/eventstreamer/issues/9). 
 2) Sometimes we see timeout exceptions, but the recent addition of `async` code seems to have fixed that. 
